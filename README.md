@@ -1,0 +1,1 @@
+# turkdagumutcan-afk-solar-analysis
