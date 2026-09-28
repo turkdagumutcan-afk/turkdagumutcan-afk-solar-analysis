@@ -95,8 +95,8 @@ with col_harita:
     st.subheader("🗺️ Türkiye Güneş Potansiyeli İnteraktif Haritası")
     st.caption("Harita üzerindeki illere yaklaşabilir, noktaların üzerine gelerek veya alttaki kutudan il seçebilirsiniz.")
 
-    # Plotly Scatter Mapbox (Güneş Işınımına Göre Renklendirme)
-    fig_map = px.scatter_mapbox(
+    # Sürüm uyumluluğu için scatter_geo kullanımı (Token veya mapbox sürüm hatası vermez)
+    fig_map = px.scatter_geo(
         df_turkiye,
         lat="lat",
         lon="lon",
@@ -111,13 +111,26 @@ with col_harita:
         color="Gunes_Isinimi_kWh_m2",
         size="Yillik_Gunes_Saati",
         color_continuous_scale="YlOrRd",
-        size_max=16,
-        zoom=5.0,
-        center={"lat": 38.9637, "lon": 35.2433},
-        mapbox_style="carto-positron",
+        size_max=22,
         title="İllere Göre Yıllık Işınım (kWh/m²)"
     )
-    fig_map.update_layout(margin={"r": 0, "t": 30, "l": 0, "b": 0})
+    
+    # Haritayı Türkiye merkezine odaklama
+    fig_map.update_geos(
+        center=dict(lat=39.0, lon=35.3),
+        lataxis_range=[35.5, 42.5],
+        lonaxis_range=[25.5, 45.0],
+        visible=True,
+        resolution=50,
+        showcountries=True,
+        showcoastlines=True,
+        showland=True,
+        landcolor="#22272e",
+        oceancolor="#161b22",
+        showocean=True,
+        countrycolor="#444c56"
+    )
+    fig_map.update_layout(margin={"r": 0, "t": 35, "l": 0, "b": 0}, height=450)
     st.plotly_chart(fig_map, use_container_width=True)
 
     secilen_il = st.selectbox(
@@ -158,17 +171,19 @@ with col_detay:
         return df_h
 
     with st.spinner("Meteoroloji uydusundan canlı ışınım verisi alınıyor..."):
-        df_canli = sehir_hava_cek(il_bilgisi["lat"], il_bilgisi["lon"])
-        
-    fig_line = px.line(
-        df_canli, 
-        x="Zaman", 
-        y="Toplam_Isinim_W_m2", 
-        labels={"Toplam_Isinim_W_m2": "Işınım (W/m²)", "Zaman": "Tarih / Saat"},
-        color_discrete_sequence=["#FF7F00"]
-    )
-    fig_line.update_layout(height=260, margin={"r": 0, "t": 10, "l": 0, "b": 0})
-    st.plotly_chart(fig_line, use_container_width=True)
+        try:
+            df_canli = sehir_hava_cek(il_bilgisi["lat"], il_bilgisi["lon"])
+            fig_line = px.line(
+                df_canli, 
+                x="Zaman", 
+                y="Toplam_Isinim_W_m2", 
+                labels={"Toplam_Isinim_W_m2": "Işınım (W/m²)", "Zaman": "Tarih / Saat"},
+                color_discrete_sequence=["#FF7F00"]
+            )
+            fig_line.update_layout(height=240, margin={"r": 0, "t": 10, "l": 0, "b": 0})
+            st.plotly_chart(fig_line, use_container_width=True)
+        except Exception:
+            st.warning("Canlı hava durumu bağlantısı geçici olarak kurulamadı.")
 
 # 4. Alt Bölüm: Tüm İllerin Karşılaştırmalı Veri Tablosu
 st.markdown("---")
